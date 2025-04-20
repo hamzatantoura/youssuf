@@ -1,44 +1,54 @@
 from flask import Flask, request
-from twilio.twiml.messaging_response import MessagingResponse
-import openai
 import os
 from dotenv import load_dotenv
+from twilio.twiml.messaging_response import MessagingResponse
+import openai
 
+# تحميل المتغيرات من .env
 load_dotenv()
+
 app = Flask(__name__)
+
+# مفتاح OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 @app.route("/webhook", methods=["POST"])
 def whatsapp_webhook():
     incoming_msg = request.form.get("Body", "").strip()
-    resp = MessagingResponse()
-    msg = resp.message()
+    response = MessagingResponse()
+    msg = response.message()
 
-    classification, reply = generate_smart_reply(incoming_msg)
+    # تصنيف الرسالة وتوليد الرد
+    try:
+        reply = generate_smart_reply(incoming_msg)
+    except Exception as e:
+        reply = "صار خلل بسيط، جرب تبعتلنا من جديد بالله."
+
     msg.body(reply)
-    return str(resp)
+    return str(response)
 
 def generate_smart_reply(message):
-    try:
-        system_prompt = f"""
-أنت مساعد ذكي تتحدث باللهجة الليبية، هدفك فهم العميل وبيع زيت شعر يعالج التساقط. إذا طلب، اسأله على اسمه ورقمه وعنوانه.
-الرسالة: {message}
-الرد:
-        """
+    system_prompt = """
+    أنت مساعد ذكي وظيفتك ترد على استفسارات العملاء بخصوص منتج زيت الشعر باللهجة الليبية بطريقة مقنعة ومرتبة.
+    مهمتك:
+    1. فهم نية الزبون (استفسار، طلب، تردد).
+    2. الرد بلغة بسيطة ومقنعة.
+    3. طلب اسم المستلم، العنوان، ورقم الهاتف إذا حسيت إنه الزبون ناوي يشتري.
 
-        completion = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": message}
-            ],
-            max_tokens=200
-        )
+    ملاحظة: الزيت مخصص للرجال والنساء، يعالج التساقط، ويُستخدم ٣ مرات أسبوعيًا. سعره 120 دينار مع شحن مجاني.
+    """
+    prompt = f"{system_prompt}\n\nالرسالة من الزبون: {message}\n\nردك باللهجة الليبية:"
 
-        reply = completion.choices[0].message["content"].strip()
-        return "طلب جديد", reply
-    except Exception as e:
-        return "خطأ", "صار خلل بسيط، جرب تبعتلنا من جديد بالله."
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": message}
+        ],
+        max_tokens=200,
+        temperature=0.7
+    )
+    return completion.choices[0].message["content"].strip()
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000)
