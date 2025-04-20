@@ -11,10 +11,14 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 @app.route("/webhook", methods=["POST"])
 def whatsapp_webhook():
     incoming_msg = request.form.get("Body", "").strip()
+    print("Received message from WhatsApp:", incoming_msg)
+
     response = MessagingResponse()
     msg = response.message()
 
     classification, reply = generate_smart_reply(incoming_msg)
+    print("Generated reply:", reply)
+
     msg.body(reply)
     return str(response)
 
@@ -31,6 +35,7 @@ def generate_smart_reply(message):
         {"role": "user", "content": message}
     ]
 
+    print("Sending messages to OpenAI...")
     try:
         chat = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
