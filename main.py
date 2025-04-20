@@ -1,7 +1,7 @@
 from flask import Flask, request
-import os
 from twilio.twiml.messaging_response import MessagingResponse
 import openai
+import os
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,43 +11,34 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 @app.route("/webhook", methods=["POST"])
 def whatsapp_webhook():
     incoming_msg = request.form.get("Body", "").strip()
-    print("Received message from WhatsApp:", incoming_msg)
-
-    response = MessagingResponse()
-    msg = response.message()
+    resp = MessagingResponse()
+    msg = resp.message()
 
     classification, reply = generate_smart_reply(incoming_msg)
-    print("Generated reply:", reply)
-
     msg.body(reply)
-    return str(response)
+    return str(resp)
 
 def generate_smart_reply(message):
-    system_prompt = """
-    أنت مساعد ذكي باللهجة الليبية، تشتغل مع بزنس يبيع زيت شعر طبيعي اسمه "ميسال".
-    مهمتك ترد على العملاء، وتقنعهم بطريقة ذكية بالشراء، وتصنف نيتهم (طلب - استفسار - دعم - غير معروف).
-    لو حسّيت إن الزبون جدي، اطلب منه اسمه، رقم هاتفه، وعنوانه لتكمل الطلب.
-    لا تكرر نفس الجمل، وكون لطيف وقريب من الزبون.
-    """
-
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": message}
-    ]
-
-    print("Sending messages to OpenAI...")
     try:
-        chat = openai.ChatCompletion.create(
+        system_prompt = f"""
+أنت مساعد ذكي تتحدث باللهجة الليبية، هدفك فهم العميل وبيع زيت شعر يعالج التساقط. إذا طلب، اسأله على اسمه ورقمه وعنوانه.
+الرسالة: {message}
+الرد:
+        """
+
+        completion = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=messages,
-            max_tokens=300
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": message}
+            ],
+            max_tokens=200
         )
-        reply = chat.choices[0].message.content.strip()
-        return "تم", reply
+
+        reply = completion.choices[0].message["content"].strip()
+        return "طلب جديد", reply
     except Exception as e:
-        print("OpenAI Error:", e)
-        return "مشكلة", "صار خلل بسيط، جرب تبعتلنا من جديد بالله."
+        return "خطأ", "صار خلل بسيط، جرب تبعتلنا من جديد بالله."
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 3000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(debug=True)
