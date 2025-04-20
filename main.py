@@ -38,8 +38,9 @@ def generate_smart_reply(message):
             max_tokens=300
         )
         reply = chat.choices[0].message.content.strip()
-        return "جاري المعالجة", reply
+        return "تم", reply
     except Exception as e:
+        print("OpenAI Error:", e)
         return "مشكلة", "صار خلل بسيط، جرب تبعتلنا من جديد بالله."
 
 if __name__ == "__main__":
