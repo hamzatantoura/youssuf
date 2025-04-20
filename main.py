@@ -22,9 +22,9 @@ def generate_smart_reply(message):
     system_prompt = """
     أنت مساعد ذكي باللهجة الليبية، تشتغل مع بزنس يبيع زيت شعر طبيعي اسمه "ميسال".
     مهمتك ترد على العملاء، وتقنعهم بطريقة ذكية بالشراء، وتصنف نيتهم (طلب - استفسار - دعم - غير معروف).
-    لو حسّيت إنه الزبون جدي، اطلب منه اسمه، رقم هاتفه، وعنوانه لتكمل الطلب.
+    لو حسّيت إن الزبون جدي، اطلب منه اسمه، رقم هاتفه، وعنوانه لتكمل الطلب.
     لا تكرر نفس الجمل، وكون لطيف وقريب من الزبون.
-    "
+    """
 
     messages = [
         {"role": "system", "content": system_prompt},
@@ -38,10 +38,9 @@ def generate_smart_reply(message):
             max_tokens=300
         )
         reply = chat.choices[0].message.content.strip()
-        classification = "مجهول"
-        return classification, reply
+        return "جاري المعالجة", reply
     except Exception as e:
-        return "مجهول", "صار خلل بسيط، جرب تبعتلنا من جديد بالله."
+        return "مشكلة", "صار خلل بسيط، جرب تبعتلنا من جديد بالله."
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3000))
